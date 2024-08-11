@@ -3,43 +3,40 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 
-def process_video(video_path):
-    cap = cv2.VideoCapture(video_path)
-    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    
-    output_path = tempfile.mktemp(suffix='.mp4')
-    out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
-    
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-        
-        # Dummy prediction: draw a rectangle and put text
-        cv2.rectangle(frame, (50, 50), (200, 200), (0, 255, 0), 2)
-        cv2.putText(frame, 'Prediction', (60, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
-        
-        out.write(frame)
-    
-    cap.release()
-    out.release()
-    
-    return output_path
+# Function to search for movie or TV show titles with season and episode
+def search_titles(data, query):
+    results = data[data['title'].str.contains(query, case=False, na=False)]
+    return results
 
-st.title("Video Upload and Processing")
+# Function to search subtitles with AI transcripts
+def search_subtitles(data, query):
+    results = data[data['transcript'].str.contains(query, case=False, na=False)]
+    return results
 
-uploaded_file = st.file_uploader("Upload a video file (mp4 or mov)", type=["mp4", "mov"])
+# Load data
+@st.cache
+def load_data():
+    # Replace with the path to your data file
+    data = pd.read_csv('path_to_your_data_file.csv')
+    return data
 
-if uploaded_file is not None:
-    tfile = tempfile.NamedTemporaryFile(delete=False)
-    tfile.write(uploaded_file.read())
-    
-    st.video(tfile.name)
-    
-    if st.button("Process Video"):
-        output_path = process_video(tfile.name)
-        st.video(output_path)
-        st.success("Video processed successfully!")
+data = load_data()
+
+# Streamlit app
+st.title('Movie and TV Show Search')
+
+# Search for titles
+st.header('Search for Movie or TV Show Titles')
+title_query = st.text_input('Enter title to search for:')
+if title_query:
+    title_results = search_titles(data, title_query)
+    st.write('Results:')
+    st.write(title_results)
+
+# Search for subtitles
+st.header('Search Subtitles with AI Transcripts')
+subtitle_query = st.text_input('Enter subtitle to search for:')
+if subtitle_query:
+    subtitle_results = search_subtitles(data, subtitle_query)
+    st.write('Results:')
+    st.write(subtitle_results)
