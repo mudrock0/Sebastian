@@ -4,37 +4,42 @@ import numpy as np
 import streamlit as st
 
 def process_video(video_path):
-    video = cv2.VideoCapture(video_path)
-    frames = []
-    while video.isOpened():
-        success, frame = video.read()
-        if not success:
+    cap = cv2.VideoCapture(video_path)
+    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    
+    output_path = tempfile.mktemp(suffix='.mp4')
+    out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
+    
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
             break
-        frames.append(frame)
-    video.release()
-    return frames
+        
+        # Dummy prediction: draw a rectangle and put text
+        cv2.rectangle(frame, (50, 50), (200, 200), (0, 255, 0), 2)
+        cv2.putText(frame, 'Prediction', (60, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+        
+        out.write(frame)
+    
+    cap.release()
+    out.release()
+    
+    return output_path
 
-st.title("YouTube Video and Local Video Processor")
+st.title("Video Upload and Processing")
 
-# Input YouTube URL
-youtube_url = st.text_input("Enter YouTube video URL")
-
-# Upload local video file
 uploaded_file = st.file_uploader("Upload a video file (mp4 or mov)", type=["mp4", "mov"])
 
 if uploaded_file is not None:
-    # Save uploaded file to a temporary location
-    with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-        tmp_file.write(uploaded_file.read())
-        tmp_file_path = tmp_file.name
-
-    # Process the video
-    frames = process_video(tmp_file_path)
-    st.write(f"Processed {len(frames)} frames from the uploaded video.")
-
-    # Display the first frame as an example
-    if frames:
-        st.image(frames[0], channels="BGR", caption="First frame of the video")
-
-    # Clean up temporary file
-    os.remove(tmp_file_path)
+    tfile = tempfile.NamedTemporaryFile(delete=False)
+    tfile.write(uploaded_file.read())
+    
+    st.video(tfile.name)
+    
+    if st.button("Process Video"):
+        output_path = process_video(tfile.name)
+        st.video(output_path)
+        st.success("Video processed successfully!")
