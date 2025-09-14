@@ -1,6 +1,9 @@
 import altair as alt
 import pandas as pd
 import streamlit as st
+import os
+import shutil
+import tempfile
 
 # Function to search for movie or TV show titles with season and episode
 def search_titles(data, query):
@@ -20,6 +23,7 @@ def load_data():
     return data
 
 data = load_data()
+
 
 # Streamlit app
 st.title('Movie and TV Show Search')
